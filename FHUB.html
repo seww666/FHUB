@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoundHub</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .form-container, .chat-container, .post-container {
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .messages {
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+        .message {
+            margin: 5px 0;
+        }
+        .post {
+            margin: 10px 0;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: gray;
+        }
+        .file-preview {
+            margin-top: 10px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin: 20px;
+        }
+        .button {
+            margin-left: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #private-room-form {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        #enter-room-form {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        #private-chat-container {
+            display: none;
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Форма реєстрації та авторизації -->
+    <div id="auth-form" class="form-container">
+        <h3>Авторизація</h3>
+        <input type="email" id="auth-email" placeholder="Введіть email" required><br><br>
+        <input type="password" id="auth-password" placeholder="Введіть пароль" required><br><br>
+        <button id="auth-btn">Зайти</button>
+    </div>
+
+    <!-- Форма реєстрації -->
+    <div id="register-form" class="form-container" style="display: none;">
+        <h3>Реєстрація</h3>
+        <input type="email" id="email" placeholder="Введіть email" required><br><br>
+        <input type="password" id="password" placeholder="Введіть пароль" required><br><br>
+        <button id="register-btn">Зареєструватися</button>
+    </div>
+
+    <!-- Кнопки для приватних кімнат -->
+    <div class="buttons">
+        <button id="create-private-room" class="button">Створити приватну кімнату</button>
+        <button id="enter-private-room" class="button">Ввести в кімнату</button>
+    </div>
+
+    <!-- Форма для створення приватної кімнати -->
+    <div id="private-room-form">
+        <h3>Створення приватної кімнати</h3>
+        <input type="text" id="private-room-password" placeholder="Введіть пароль для кімнати" required><br><br>
+        <button id="create-room-btn">Створити кімнату</button>
+    </div>
+
+    <!-- Форма для входу в приватну кімнату -->
+    <div id="enter-room-form">
+        <h3>Вхід до приватної кімнати</h3>
+        <input type="text" id="enter-room-password" placeholder="Введіть пароль для кімнати" required><br><br>
+        <button id="enter-room-btn">Ввести в кімнату</button>
+    </div>
+
+    <!-- Приватний чат -->
+    <div id="private-chat-container">
+        <h3>Приватний чат</h3>
+        <div id="private-messages" class="messages"></div>
+        <input type="text" id="private-chat-message" placeholder="Напишіть повідомлення" required>
+        <button id="send-private-message">Відправити</button>
+        <br><br>
+        <button id="back-to-main-menu">Повернутися до головного меню</button>
+    </div>
+
+    <!-- Чат -->
+    <div id="chat" class="chat-container" style="display: none;">
+        <h3>Загальний чат</h3>
+        <div id="messages" class="messages"></div>
+        <input type="text" id="chat-message" placeholder="Напишіть повідомлення" required>
+        <button id="send-btn">Відправити</button>
+    </div>
+
+    <!-- Пости -->
+    <div id="posts" class="post-container" style="display: none;">
+        <h3>Пости</h3>
+        <input type="text" id="post-content" placeholder="Напишіть пост" required><br><br>
+        <input type="file" id="post-file" accept="image/*, .pdf, .docx"><br><br>
+        <button id="post-btn">Опублікувати</button>
+        <div id="file-preview" class="file-preview"></div>
+        <div id="post-list"></div>
+    </div>
+
+    <script>
+        // Функція перевірки авторизації
+        const isLoggedIn = () => {
+            const user = JSON.parse(localStorage.getItem('user'));
+            return user && user.email;
+        };
+
+        // Показати форму для авторизації, якщо користувач не залогінений
+        const showAuthForm = () => {
+            document.getElementById('auth-form').style.display = 'block';
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('chat').style.display = 'none';
+            document.getElementById('posts').style.display = 'none';
+            document.getElementById('private-room-form').style.display = 'none';
+            document.getElementById('enter-room-form').style.display = 'none';
+            document.getElementById('private-chat-container').style.display = 'none';
+        };
+
+        // Показати основний контент після авторизації
+        const showMainContent = () => {
+            document.getElementById('auth-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'none';
+            document.getElementById('chat').style.display = 'block';
+            document.getElementById('posts').style.display = 'block';
+        };
+
+        // Якщо користувач залогінений, показуємо основний контент
+        if (isLoggedIn()) {
+            showMainContent();
+        } else {
+            showAuthForm();
+        }
+
+        // Логіка реєстрації
+        const registerBtn = document.getElementById('register-btn');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+
+        // Реєстрація користувача
+        registerBtn.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            if (email && password) {
+                const user = { email, password };
+                localStorage.setItem('user', JSON.stringify(user));
+                alert('Ви успішно зареєстровані!');
+                location.reload(); // перезавантажуємо сторінку після реєстрації
+            } else {
+                alert('Будь ласка, введіть всі дані!');
+            }
+        });
+
+        // Логіка авторизації
+        const authBtn = document.getElementById('auth-btn');
+        const authEmailInput = document.getElementById('auth-email');
+        const authPasswordInput = document.getElementById('auth-password');
+
+        // Авторизація користувача
+        authBtn.addEventListener('click', () => {
+            const email = authEmailInput.value;
+            const password = authPasswordInput.value;
+
+            const storedUser = JSON.parse(localStorage.getItem('user'));
+
+            if (storedUser && storedUser.email === email && storedUser.password === password) {
+                alert('Вітаємо, ви успішно увійшли!');
+                location.reload(); // перезавантажуємо сторінку після авторизації
+            } else {
+                alert('Невірний email або пароль!');
+            }
+        });
+
+        // Логіка приватних кімнат
+        const privateRooms = {};
+
+        // Показати форму для створення приватної кімнати
+        document.getElementById('create-private-room').addEventListener('click', () => {
+            document.getElementById('private-room-form').style.display = 'block';
+            document.getElementById('enter-room-form').style.display = 'none';
+        });
+
+        // Показати форму для входу до приватної кімнати
+        document.getElementById('enter-private-room').addEventListener('click', () => {
+            document.getElementById('private-room-form').style.display = 'none';
+            document.getElementById('enter-room-form').style.display = 'block';
+        });
+
+        // Створення приватної кімнати
+        document.getElementById('create-room-btn').addEventListener('click', () => {
+            const password = document.getElementById('private-room-password').value;
+
+            if (password) {
+                const roomId = new Date().getTime(); // Генеруємо унікальний ID для кімнати
+                privateRooms[roomId] = password;
+                alert('Приватну кімнату створено!');
+                document.getElementById('private-room-form').style.display = 'none';
+            } else {
+                alert('Будь ласка, введіть пароль!');
+            }
+        });
+
+        // Вхід до приватної кімнати
+        document.getElementById('enter-room-btn').addEventListener('click', () => {
+            const password = document.getElementById('enter-room-password').value;
+            const roomId = parseInt(prompt("Введіть ID кімнати:"));
+
+            if (privateRooms[roomId] && privateRooms[roomId] === password) {
+                alert('Ви увійшли до приватної кімнати!');
+                document.getElementById('private-chat-container').style.display = 'block';
+                document.getElementById('private-room-form').style.display = 'none';
+                document.getElementById('enter-room-form').style.display = 'none';
+            } else {
+                alert('Невірний пароль або ID кімнати!');
+            }
+        });
+
+        // Логіка повідомлень для приватного чату
+        const sendPrivateMessageBtn = document.getElementById('send-private-message');
+        const privateChatMessageInput = document.getElementById('private-chat-message');
+        const privateMessagesContainer = document.getElementById('private-messages');
+
+        sendPrivateMessageBtn.addEventListener('click', () => {
+            const message = privateChatMessageInput.value;
+            if (message) {
+                const messageElement = document.createElement('div');
+                messageElement.classList.add('message');
+                messageElement.textContent = message;
+                privateMessagesContainer.appendChild(messageElement);
+                privateChatMessageInput.value = '';
+            }
+        });
+
+        // Кнопка для повернення до головного меню
+        document.getElementById('back-to-main-menu').addEventListener('click', () => {
+            document.getElementById('private-chat-container').style.display = 'none';
+            showMainContent();
+        });
+    </script>
+
+</body>
+</html>
